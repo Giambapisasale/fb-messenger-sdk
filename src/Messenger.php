@@ -45,8 +45,49 @@ class Messenger
         $options = RequestOptionsFactory::createForMessage($recipient, $message, $notificationType);
         $response = $this->client->send('POST', '/me/messages', null, [], [], $options);
         $responseData = $this->decodeResponse($response);
-
-        return new MessageResponse($responseData['recipient_id'], $responseData['message_id']);
+        
+        return (new CustomMessageResponse($responseData))->serialize();
+    }
+    
+    public function sendAttachmentById($chat_id, $att_id) {
+        $option = [ "json" => [
+            "recipient" => [
+                "id"=>$chat_id],
+            "message" => ["attachment" => [
+                "type" => "image",
+                "payload" => [
+                    "attachment_id" => $att_id
+                ]
+            ]
+            ] ] ];
+        
+        $response = $this->client->send('POST', '/me/messages', null, [], [], $option);
+        $responseData = $this->decodeResponse($response);
+        return (new CustomMessageResponse($responseData))->serialize();
+    }
+    
+    /**
+     * Set webhook
+     *         $option = [ "object" => "page",
+     "callback_url" => $url,
+     "verify_token" => "aabbcc112233",
+     "app_id" => '11111111'
+     ];
+     $query = ['access_token' => 'app_id|secret'];
+     *
+     * @return bool
+     */
+    public function setSubscriptions($options, array $query = [])
+    {
+        $ep = "me";
+        if(isset($options['app_id'])) {
+            $ep = $options['app_id'];
+            unset($options['app_id']);
+        }
+        $response = $this->client->send('POST','/'.$ep.'/subscriptions', $options, $query);
+        $decoded = $this->decodeResponse($response);
+        
+        return $decoded['success'];
     }
 
     /**
